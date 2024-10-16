@@ -1,17 +1,28 @@
 from setuptools import setup, find_packages
 
 setup(
-        name="hayai_tool",                  # The name of your tool
-        version="0.1",
-        packages=find_packages(),
-        install_requires=[                  # Dependencies if needed
-                          "pandas",
-                          "pyperclip",
-                          ],
-        entry_points={
-            'console_scripts': [
-                'hayai=hayai.main:main',    # Maps the 'hayai' command to the 'main' function in your script
-                ],
-            },
-        python_requires='>=3.6',            # Ensure correct Python version
-        )
+    name="hayai-tool",
+    version="0.1.0",
+    author="Lonnie Pollocks",
+    author_email="lonnieprogramming@gmail.com",
+    description="A tool for processing CSV files, generating SQL, and handling templates.",
+    url="https://github.com/Tre21tyu/bd_hayai.git",
+    packages=find_packages(),
+    install_requires=[
+        "pandas",
+        "pyperclip",
+        "openpyxl",
+        "argparse",
+    ],
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+    ],
+    entry_points={
+        "console_scripts": [
+            "hayai=hayai.main:main",
+        ],
+    },
+    python_requires='>=3.6',
+)

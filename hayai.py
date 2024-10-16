@@ -10,9 +10,9 @@ def process_csv_step1(file_path):
     df['CN'] = df['CN'].apply(lambda x: str(x).zfill(8))
     return df.iloc[:, [4, 5, 6]]
 
+
 def tocsv(directory):
     # Step 1: Find the Excel file with the largest number
-    # Find all files in the specified directory matching the pattern "X_はやい.xlsx"
     existing_files = [f for f in os.listdir(directory) if f.endswith("_はやい.xlsx")]
 
     # Determine the file with the largest number
@@ -47,6 +47,7 @@ def tocsv(directory):
     df.to_csv(csv_file, index=False)
     print(f"Converted {excel_file_path} to {csv_file}")
 
+
 def process_csv_step2(file1, file2):
     df_from_enduser = process_csv_step1(file1)
 
@@ -54,11 +55,12 @@ def process_csv_step2(file1, file2):
     df_from_ssms.drop([2, 3, 4], axis=1, inplace=True)
     df_from_ssms.rename(columns={0: 'MEK', 1: 'CN_'}, inplace=True)
     df_from_ssms['CN_'] = df_from_ssms['CN_'].apply(lambda x: str(x).zfill(8))
-build
+
     df_hayai = pd.concat([df_from_enduser, df_from_ssms], axis=1)
     df_hayai['MEK'] = df_hayai['MEK'].fillna(0).astype(int)
 
     return df_hayai
+
 
 def get_meks_from_ssms(control_numbers):
     case_statements = [f"        WHEN [ControlNo] = '{cn}' THEN {i+1}" for i, cn in enumerate(control_numbers)]
@@ -80,7 +82,9 @@ def get_meks_from_ssms(control_numbers):
         CASE\n    {case_block}  
     END;
     """.strip()
+
     return sql_command
+
 
 def generate_sql_for_ssms(meks, dates, rtls_codes):
     if not (len(meks) == len(dates) == len(rtls_codes)):
@@ -111,7 +115,9 @@ def generate_sql_for_ssms(meks, dates, rtls_codes):
     WHERE 
        [EquipmentKey] IN ({mek_list});
     """.strip()
+
     return sql_command
+
 
 def copy_template():
     template_filename = "TEMPLATE.xlsx"
@@ -141,6 +147,7 @@ def copy_template():
 
     print(f"Copied TEMPLATE.xlsx to {new_filename}")
 
+
 def main():
     parser = argparse.ArgumentParser(description="Process CSV files, generate SQL, and handle templates.")
     parser.add_argument("options", choices=["step1", "step2", "cpysrc", "tocsv"], help="Step to execute: 'step1', 'step2', or 'cpysrc'")
@@ -149,9 +156,10 @@ def main():
     parser.add_argument("-c", "--copy", action="store_true", help="Copy the SQL command to the clipboard")
     parser.add_argument("-l", "--log", action="store_true", help="Display the DataFrame content")
 
-    # For linux users, one of these two should work
+    # pyperclip setup for Linux users
     # pyperclip.set_clipboard('xsel')
     # pyperclip.set_clipboard('xclip')
+
     args = parser.parse_args()
 
     if args.options == "step1":
@@ -195,9 +203,11 @@ def main():
 
     elif args.options == "cpysrc":
         copy_template()
+
     elif args.options == "tocsv":
-        curr_dir = os.getcwd()  # Get the current working directory
+        curr_dir = os.getcwd()
         tocsv(curr_dir)
+
 
 if __name__ == "__main__":
     main()
