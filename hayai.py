@@ -10,6 +10,43 @@ def process_csv_step1(file_path):
     df['CN'] = df['CN'].apply(lambda x: str(x).zfill(8))
     return df.iloc[:, [4, 5, 6]]
 
+def tocsv(directory):
+    # Step 1: Find the Excel file with the largest number
+    # Find all files in the specified directory matching the pattern "X_はやい.xlsx"
+    existing_files = [f for f in os.listdir(directory) if f.endswith("_はやい.xlsx")]
+
+    # Determine the file with the largest number
+    numbers = []
+    for file in existing_files:
+        try:
+            number = int(file.split("_")[0])  # Extract the number before "_はやい.xlsx"
+            numbers.append((number, file))  # Store both the number and the file name
+        except ValueError:
+            pass
+
+    if not numbers:
+        print("No matching files found in the directory.")
+        return
+
+    # Get the file with the largest number
+    largest_number, largest_file = max(numbers, key=lambda x: x[0])
+    print(f"Found file with the largest number: {largest_file}")
+
+    # Step 2: Convert the found Excel file to a CSV file
+    excel_file_path = os.path.join(directory, largest_file)
+    try:
+        df = pd.read_excel(excel_file_path)
+    except FileNotFoundError:
+        print(f"Error: {excel_file_path} not found.")
+        return
+
+    # Create a new CSV filename (same as the Excel file but with .csv extension)
+    csv_file = excel_file_path.replace(".xlsx", ".csv")
+
+    # Save the dataframe as a CSV file
+    df.to_csv(csv_file, index=False)
+    print(f"Converted {excel_file_path} to {csv_file}")
+
 def process_csv_step2(file1, file2):
     df_from_enduser = process_csv_step1(file1)
 
@@ -106,7 +143,7 @@ def copy_template():
 
 def main():
     parser = argparse.ArgumentParser(description="Process CSV files, generate SQL, and handle templates.")
-    parser.add_argument("step", choices=["step1", "step2", "cpysrc"], help="Step to execute: 'step1', 'step2', or 'cpysrc'")
+    parser.add_argument("options", choices=["step1", "step2", "cpysrc", "tocsv"], help="Step to execute: 'step1', 'step2', or 'cpysrc'")
     parser.add_argument("csv_file1", nargs="?", help="Path to the first input CSV file (not needed for cpysrc)")
     parser.add_argument("csv_file2", nargs="?", help="Path to the second input CSV file (for step2)")
     parser.add_argument("-c", "--copy", action="store_true", help="Copy the SQL command to the clipboard")
@@ -117,7 +154,7 @@ def main():
     # pyperclip.set_clipboard('xclip')
     args = parser.parse_args()
 
-    if args.step == "step1":
+    if args.options == "step1":
         if not args.csv_file1:
             print("Error: Step 1 requires a CSV file.")
             return
@@ -134,7 +171,7 @@ def main():
             pyperclip.copy(sql_command)
             print("\nSQL command copied to clipboard!")
 
-    elif args.step == "step2":
+    elif args.options == "step2":
         if not (args.csv_file1 and args.csv_file2):
             print("Error: Step 2 requires two CSV files.")
             return
@@ -156,8 +193,11 @@ def main():
             pyperclip.copy(sql_command)
             print("\nSQL command copied to clipboard!")
 
-    elif args.step == "cpysrc":
+    elif args.options == "cpysrc":
         copy_template()
+    elif args.options == "tocsv":
+        curr_dir = os.getcwd()  # Get the current working directory
+        tocsv(curr_dir)
 
 if __name__ == "__main__":
     main()

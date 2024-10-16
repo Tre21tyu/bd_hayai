@@ -1,9 +1,0 @@
-setup.py
-hayai/__init__.py
-hayai/main.py
-hayai_tool.egg-info/PKG-INFO
-hayai_tool.egg-info/SOURCES.txt
-hayai_tool.egg-info/dependency_links.txt
-hayai_tool.egg-info/entry_points.txt
-hayai_tool.egg-info/requires.txt
-hayai_tool.egg-info/top_level.txt

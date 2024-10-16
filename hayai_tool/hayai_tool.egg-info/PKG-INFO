@@ -1,7 +1,0 @@
-Metadata-Version: 2.1
-Name: hayai_tool
-Version: 0.1
-Requires-Python: >=3.6
-Requires-Dist: pandas
-Requires-Dist: pyperclip
-Requires-Dist: argparse
