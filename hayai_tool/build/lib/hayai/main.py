@@ -54,7 +54,7 @@ def process_csv_step2(file1, file2):
     df_from_ssms.drop([2, 3, 4], axis=1, inplace=True)
     df_from_ssms.rename(columns={0: 'MEK', 1: 'CN_'}, inplace=True)
     df_from_ssms['CN_'] = df_from_ssms['CN_'].apply(lambda x: str(x).zfill(8))
-build
+
     df_hayai = pd.concat([df_from_enduser, df_from_ssms], axis=1)
     df_hayai['MEK'] = df_hayai['MEK'].fillna(0).astype(int)
 
