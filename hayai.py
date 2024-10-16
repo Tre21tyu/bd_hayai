@@ -112,7 +112,9 @@ def main():
     parser.add_argument("-c", "--copy", action="store_true", help="Copy the SQL command to the clipboard")
     parser.add_argument("-l", "--log", action="store_true", help="Display the DataFrame content")
 
-    pyperclip.set_clipboard('xsel')
+    # For linux users, one of these two should work
+    # pyperclip.set_clipboard('xsel')
+    # pyperclip.set_clipboard('xclip')
     args = parser.parse_args()
 
     if args.step == "step1":
