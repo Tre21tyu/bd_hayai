@@ -1,9 +1,10 @@
+import argparse
+import sys
 import os
 import pandas as pd
-import argparse
+import pkg_resources
 import pyperclip
 import shutil
-
 
 def process_csv_step1(file_path):
     df = pd.read_csv(file_path)
@@ -170,23 +171,49 @@ def copy_template():
 
     print(f"Copied TEMPLATE.xlsx to {new_filename}")
 
+
 def read_ascii_art(file_path='hayai_art.txt'):
     """
-    Read ASCII art from a text file.
+    Read ASCII art from a package data file and add a welcome message.
     
     Args:
         file_path (str): Path to the ASCII art text file
     
     Returns:
-        str: ASCII art content
+        str: ASCII art content with welcome message
     """
     try:
-        with open(file_path, 'r') as file:
-            return file.read()
-    except FileNotFoundError:
-        return "Welcome to Hayai Script"  # Fallback message if file not found
+        # Use pkg_resources to locate the file within the package
+        ascii_art_path = pkg_resources.resource_filename('ht', f'data/{file_path}')
+        
+        with open(ascii_art_path, 'r') as file:
+            ascii_art = file.read()
+        
+        # Add welcome message beneath the ASCII art
+        return f"{ascii_art}\nWelcome to bd_hayai"
+    except (FileNotFoundError, IOError):
+        return "Welcome to Hayai Script\nWelcome to bd_hayai"
+
+def print_usage():
+    """
+    Print usage instructions when 'hayai' is typed without arguments.
+    """
+    print(read_ascii_art())  # Print ASCII art
+    print("\nUsage: python script.py [options] [arguments]\n")
+    print("Options:")
+    print("  step1 <csv_file>           Process first step with CSV file")
+    print("  step2 <csv_file1> <csv_file2>  Process second step with two CSV files")
+    print("  cpysrc                     Copy source template")
+    print("  tocsv                      Convert Excel to CSV")
+    print("\nAdditional flags:")
+    print("  -c, --copy                 Copy SQL command to clipboard")
+    print("  -l, --log                  Display DataFrame content")
 
 def main():
+    # If no arguments are provided, print usage
+    if len(sys.argv) == 1:
+        print_usage()
+        return
     # ASCII art printed only once
     print(read_ascii_art())
 
@@ -198,6 +225,9 @@ def main():
         parser.add_argument("-c", "--copy", action="store_true", help="Copy the SQL command to the clipboard")
         parser.add_argument("-l", "--log", action="store_true", help="Display the DataFrame content")
 
+     # For linux users, one of these two should work
+        # pyperclip.set_clipboard('xsel')
+        # pyperclip.set_clipboard('xclip')
         args = parser.parse_args()
 
         if args.options == "step1":
