@@ -1,5 +1,6 @@
 import argparse
 import sys
+import readline
 import os
 import pandas as pd
 import pkg_resources
@@ -198,8 +199,7 @@ def print_usage():
     """
     Print usage instructions when 'hayai' is typed without arguments.
     """
-    print(read_ascii_art())  # Print ASCII art
-    print("\nUsage: python script.py [options] [arguments]\n")
+    print("\nUsage: hayai  [options] [arguments]\n")
     print("Options:")
     print("  step1 <csv_file>           Process first step with CSV file")
     print("  step2 <csv_file1> <csv_file2>  Process second step with two CSV files")
@@ -210,26 +210,91 @@ def print_usage():
     print("  -l, --log                  Display DataFrame content")
 
 def main():
-    # If no arguments are provided, print usage
-    if len(sys.argv) == 1:
-        print_usage()
-        return
-    # ASCII art printed only once
+    # ASCII art printed only once at the start
     print(read_ascii_art())
+    
+    # Parse initial command-line arguments if provided
+    parser = argparse.ArgumentParser(description="Process CSV files, generate SQL, and handle templates.")
+    parser.add_argument("options", nargs="?", choices=["step1", "step2", "cpysrc", "tocsv"], help="Step to execute: 'step1', 'step2', 'cpysrc', or 'tocsv'")
+    parser.add_argument("csv_file1", nargs="?", help="Path to the first input CSV file (not needed for cpysrc)")
+    parser.add_argument("csv_file2", nargs="?", help="Path to the second input CSV file (for step2)")
+    parser.add_argument("-c", "--copy", action="store_true", help="Copy the SQL command to the clipboard")
+    parser.add_argument("-l", "--log", action="store_true", help="Display the DataFrame content")
+    args = parser.parse_args()
+
+    # If invoked with CLI arguments, execute the corresponding command
+    if args.options:
+        execute_command(args)
+        # Prompt for further actions
+        interactive_loop(parser)
+    else:
+        # No arguments provided, start the interactive loop
+        print_usage()
+        interactive_loop(parser)
+
+
+def setup_readline():
+    """
+    Configures readline to enable intelligent file path tab-completion.
+    """
+    def complete_file_path(text, state):
+        """
+        Provides tab-completion for file paths, avoiding redundant prefixes.
+        """
+        # Split the user input into directory and file prefix
+        directory, file_prefix = os.path.split(text)
+        if not directory:
+            directory = "."  # Default to the current directory
+
+        try:
+            # List files in the directory
+            files = os.listdir(directory)
+        except FileNotFoundError:
+            files = []
+
+        # Filter files that match the prefix
+        matching_files = [f for f in files if f.startswith(file_prefix)]
+
+        # Append the directory path to the matching files for full completion
+        completions = [os.path.join(directory, f) if directory != "." else f for f in matching_files]
+
+        # Return the appropriate match for the current state
+        if state < len(completions):
+            return completions[state]
+        return None
+
+    # Set the completer function for readline
+    readline.set_completer(complete_file_path)
+    readline.parse_and_bind("tab: complete")  # Enable tab-completion
+
+def interactive_loop(parser):
+    """
+    Handles the interactive loop for repeated user commands.
+    """
+    setup_readline()  # Enable tab-completion
 
     while True:
-        parser = argparse.ArgumentParser(description="Process CSV files, generate SQL, and handle templates.")
-        parser.add_argument("options", choices=["step1", "step2", "cpysrc", "tocsv"], help="Step to execute: 'step1', 'step2', or 'cpysrc'")
-        parser.add_argument("csv_file1", nargs="?", help="Path to the first input CSV file (not needed for cpysrc)")
-        parser.add_argument("csv_file2", nargs="?", help="Path to the second input CSV file (for step2)")
-        parser.add_argument("-c", "--copy", action="store_true", help="Copy the SQL command to the clipboard")
-        parser.add_argument("-l", "--log", action="store_true", help="Display the DataFrame content")
+        # Prompt user for input
+        user_input = input("\nEnter the [options] [args] [flags] or type 'exit' to quit: ").strip()
 
-     # For linux users, one of these two should work
-        # pyperclip.set_clipboard('xsel')
-        # pyperclip.set_clipboard('xclip')
-        args = parser.parse_args()
+        # Exit condition
+        if user_input.lower() == "exit":
+            print("Exiting the program. Goodbye!")
+            break
 
+        # Parse the user's input
+        try:
+            args = parser.parse_args(user_input.split())
+            execute_command(args)
+        except SystemExit:
+            # Invalid input handling
+            print("Invalid command. Please try again.")
+
+def execute_command(args):
+    """
+    Executes the command based on parsed arguments.
+    """
+    try:
         if args.options == "step1":
             if not args.csv_file1:
                 print("Error: Step 1 requires a CSV file.")
@@ -275,17 +340,8 @@ def main():
         elif args.options == "tocsv":
             curr_dir = os.getcwd()
             tocsv(curr_dir)
-
-        # Ask if user wants to continue
-        while True:
-            continue_choice = input("\nDo you want to continue? (y/n): ").lower()
-            if continue_choice in ['y', 'n']:
-                break
-            print("Invalid input. Please enter 'y' or 'n'.")
-
-        if continue_choice == 'n':
-            print("Exiting the program. Goodbye!")
-            break
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 if __name__ == "__main__":
     main()

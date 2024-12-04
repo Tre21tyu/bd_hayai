@@ -1,0 +1,4 @@
+pandas
+pyperclip
+openpyxl
+argparse

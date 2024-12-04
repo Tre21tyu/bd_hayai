@@ -1,0 +1,2 @@
+[console_scripts]
+hayai = ht.main:main

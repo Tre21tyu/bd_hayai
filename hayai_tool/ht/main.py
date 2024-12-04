@@ -186,7 +186,7 @@ def read_ascii_art(file_path='hayai_art.txt'):
         # Use pkg_resources to locate the file within the package
         ascii_art_path = pkg_resources.resource_filename('ht', f'data/{file_path}')
         
-        with open(ascii_art_path, 'r') as file:
+        with open(ascii_art_path, 'r', encoding='utf-8') as file:
             ascii_art = file.read()
         
         # Add welcome message beneath the ASCII art
@@ -199,7 +199,7 @@ def print_usage():
     Print usage instructions when 'hayai' is typed without arguments.
     """
     print(read_ascii_art())  # Print ASCII art
-    print("\nUsage: python script.py [options] [arguments]\n")
+    print("\nUsage: hayai  [options] [arguments]\n")
     print("Options:")
     print("  step1 <csv_file>           Process first step with CSV file")
     print("  step2 <csv_file1> <csv_file2>  Process second step with two CSV files")
@@ -210,82 +210,91 @@ def print_usage():
     print("  -l, --log                  Display DataFrame content")
 
 def main():
-    # If no arguments are provided, print usage
-    if len(sys.argv) == 1:
-        print_usage()
-        return
-    # ASCII art printed only once
+    # ASCII art printed only once at the start
     print(read_ascii_art())
+    print_usage()  # Show usage instructions at the start
 
     while True:
+        # Prompt user for input
+        user_input = input("\nEnter the [options] [args] [flags] or type 'exit' to quit: ").strip()
+        
+        # Exit condition
+        if user_input.lower() == "exit":
+            print("Exiting the program. Goodbye!")
+            break
+
+        # Create the parser
         parser = argparse.ArgumentParser(description="Process CSV files, generate SQL, and handle templates.")
-        parser.add_argument("options", choices=["step1", "step2", "cpysrc", "tocsv"], help="Step to execute: 'step1', 'step2', or 'cpysrc'")
+        parser.add_argument("options", choices=["step1", "step2", "cpysrc", "tocsv"], help="Step to execute: 'step1', 'step2', 'cpysrc', or 'tocsv'")
         parser.add_argument("csv_file1", nargs="?", help="Path to the first input CSV file (not needed for cpysrc)")
         parser.add_argument("csv_file2", nargs="?", help="Path to the second input CSV file (for step2)")
         parser.add_argument("-c", "--copy", action="store_true", help="Copy the SQL command to the clipboard")
         parser.add_argument("-l", "--log", action="store_true", help="Display the DataFrame content")
 
-     # For linux users, one of these two should work
-        # pyperclip.set_clipboard('xsel')
-        # pyperclip.set_clipboard('xclip')
-        args = parser.parse_args()
+        try:
+            # Parse user input
+            args = parser.parse_args(user_input.split())
+        except SystemExit:
+            # Catch invalid commands
+            print("Invalid command. Please try again.")
+            continue
 
+        # Handle options
         if args.options == "step1":
             if not args.csv_file1:
                 print("Error: Step 1 requires a CSV file.")
-                return
-            df = process_csv_step1(args.csv_file1)
-            control_numbers = df['CN'].tolist()
-            sql_command = get_meks_from_ssms(control_numbers)
+                continue
+            try:
+                df = process_csv_step1(args.csv_file1)
+                control_numbers = df['CN'].tolist()
+                sql_command = get_meks_from_ssms(control_numbers)
 
-            if args.log:
-                print("\nDisplaying DataFrame (Step 1):\n")
-                print(df)
+                if args.log:
+                    print("\nDisplaying DataFrame (Step 1):\n")
+                    print(df)
 
-            print(sql_command)
-            if args.copy:
-                pyperclip.copy(sql_command)
-                print("\nSQL command copied to clipboard!")
+                print(sql_command)
+                if args.copy:
+                    pyperclip.copy(sql_command)
+                    print("\nSQL command copied to clipboard!")
+            except Exception as e:
+                print(f"An error occurred during Step 1: {e}")
 
         elif args.options == "step2":
             if not (args.csv_file1 and args.csv_file2):
                 print("Error: Step 2 requires two CSV files.")
-                return
+                continue
+            try:
+                df_hayai = process_csv_step2(args.csv_file1, args.csv_file2)
 
-            df_hayai = process_csv_step2(args.csv_file1, args.csv_file2)
+                if args.log:
+                    print("\nDisplaying DataFrame (Step 2):\n")
+                    print(df_hayai)
 
-            if args.log:
-                print("\nDisplaying DataFrame (Step 2):\n")
-                print(df_hayai)
+                master_entity_keys = df_hayai['MEK'].tolist()
+                cycle_start_dates = df_hayai.iloc[:, 1].tolist()
+                rtls_tag_codes = df_hayai.iloc[:, 2].tolist()
 
-            master_entity_keys = df_hayai['MEK'].tolist()
-            cycle_start_dates = df_hayai.iloc[:, 1].tolist()
-            rtls_tag_codes = df_hayai.iloc[:, 2].tolist()
+                sql_command = generate_sql_for_ssms(master_entity_keys, cycle_start_dates, rtls_tag_codes)
+                print(sql_command)
 
-            sql_command = generate_sql_for_ssms(master_entity_keys, cycle_start_dates, rtls_tag_codes)
-            print(sql_command)
-
-            if args.copy:
-                pyperclip.copy(sql_command)
-                print("\nSQL command copied to clipboard!")
+                if args.copy:
+                    pyperclip.copy(sql_command)
+                    print("\nSQL command copied to clipboard!")
+            except Exception as e:
+                print(f"An error occurred during Step 2: {e}")
 
         elif args.options == "cpysrc":
-            copy_template()
+            try:
+                copy_template()
+            except Exception as e:
+                print(f"An error occurred while copying the template: {e}")
 
         elif args.options == "tocsv":
-            curr_dir = os.getcwd()
-            tocsv(curr_dir)
-
-        # Ask if user wants to continue
-        while True:
-            continue_choice = input("\nDo you want to continue? (y/n): ").lower()
-            if continue_choice in ['y', 'n']:
-                break
-            print("Invalid input. Please enter 'y' or 'n'.")
-
-        if continue_choice == 'n':
-            print("Exiting the program. Goodbye!")
-            break
-
+            try:
+                curr_dir = os.getcwd()
+                tocsv(curr_dir)
+            except Exception as e:
+                print(f"An error occurred during the CSV conversion: {e}")
 if __name__ == "__main__":
     main()
